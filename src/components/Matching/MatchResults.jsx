@@ -10,7 +10,8 @@ import { AnimatedCounter } from '../UI/AnimatedCounter.jsx';
 import { useApp } from '../../context/AppContext.jsx';
 
 export const MatchResults = () => {
-  const { matchResults, parsedJD } = useApp();
+  const { matchResults, parsedJD, theme } = useApp();
+  const isDark = theme === 'dark';
   const [filters, setFilters] = useState({ minScore: 0, source: 'all', status: 'all' });
   const [tab, setTab] = useState('all');
   const [compareIds, setCompareIds] = useState([]);
@@ -58,13 +59,13 @@ export const MatchResults = () => {
     <div className="space-y-6">
       <div className="flex items-start justify-between">
         <div>
-          <h2 className="text-xl font-bold text-white">Match Results</h2>
-          <p className="text-sm text-zinc-500 mt-0.5">
+          <h2 className={`text-xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>Match Results</h2>
+          <p className={`text-sm mt-0.5 ${isDark ? 'text-zinc-500' : 'text-gray-500'}`}>
             <AnimatedCounter value={matchResults.length} /> candidates scored · <AnimatedCounter value={strong.length} /> strong matches
           </p>
         </div>
         {compareIds.length > 0 && (
-          <div className="text-xs text-blue-400 flex items-center gap-1.5">
+          <div className={`text-xs flex items-center gap-1.5 ${isDark ? 'text-blue-400' : 'text-blue-600'}`}>
             <GitCompare size={13} /> Comparing {compareIds.length}
           </div>
         )}
@@ -77,10 +78,12 @@ export const MatchResults = () => {
         <motion.div
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="bg-[#12121a] border border-blue-500/20 rounded-2xl p-5"
+          className={`border rounded-2xl p-5 ${
+            isDark ? 'bg-[#12121a] border-blue-500/20' : 'bg-white border-blue-200 shadow-sm'
+          }`}
         >
-          <h3 className="text-sm font-semibold text-white mb-4 flex items-center gap-2">
-            <GitCompare size={15} className="text-blue-400" /> Side-by-Side Comparison
+          <h3 className={`text-sm font-semibold mb-4 flex items-center gap-2 ${isDark ? 'text-white' : 'text-gray-900'}`}>
+            <GitCompare size={15} className={isDark ? 'text-blue-400' : 'text-blue-600'} /> Side-by-Side Comparison
           </h3>
           <CompareView candidates={compareCandidates} onRemove={(id) => setCompareIds((p) => p.filter((x) => x !== id))} />
         </motion.div>
@@ -88,13 +91,16 @@ export const MatchResults = () => {
 
       <div>
         <div className="flex items-center justify-between mb-3">
-          <p className="text-xs text-zinc-500">
+          <p className={`text-xs ${isDark ? 'text-zinc-500' : 'text-gray-500'}`}>
             {compareIds.length > 0
               ? `${compareIds.length}/3 selected for comparison`
               : 'Select up to 3 candidates to compare'}
           </p>
           {compareIds.length > 0 && (
-            <button onClick={() => setCompareIds([])} className="text-xs text-zinc-500 hover:text-zinc-300 transition-colors">
+            <button
+              onClick={() => setCompareIds([])}
+              className={`text-xs transition-colors ${isDark ? 'text-zinc-500 hover:text-zinc-300' : 'text-gray-500 hover:text-gray-700'}`}
+            >
               Clear selection
             </button>
           )}

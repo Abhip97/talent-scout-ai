@@ -1,4 +1,5 @@
 import { motion } from 'framer-motion';
+import { useApp } from '../../context/AppContext.jsx';
 
 const getColor = (score) => {
   if (score >= 70) return 'from-emerald-500 to-emerald-400';
@@ -8,22 +9,25 @@ const getColor = (score) => {
 };
 
 const getTextColor = (score) => {
-  if (score >= 70) return 'text-emerald-400';
-  if (score >= 50) return 'text-amber-400';
-  if (score >= 30) return 'text-orange-400';
-  return 'text-rose-400';
+  if (score >= 70) return 'text-emerald-500';
+  if (score >= 50) return 'text-amber-500';
+  if (score >= 30) return 'text-orange-500';
+  return 'text-rose-500';
 };
 
 export const ScoreBar = ({ score = 0, label, showValue = true, height = 'h-2', delay = 0 }) => {
+  const { theme } = useApp();
+  const isDark = theme === 'dark';
+
   return (
     <div className="w-full">
       {label && (
         <div className="flex justify-between items-center mb-1">
-          <span className="text-xs text-zinc-400">{label}</span>
+          <span className={`text-xs ${isDark ? 'text-zinc-400' : 'text-gray-500'}`}>{label}</span>
           {showValue && <span className={`text-xs font-semibold ${getTextColor(score)}`}>{score}</span>}
         </div>
       )}
-      <div className={`w-full bg-zinc-800 rounded-full overflow-hidden ${height}`}>
+      <div className={`w-full rounded-full overflow-hidden ${height} ${isDark ? 'bg-zinc-800' : 'bg-slate-200'}`}>
         <motion.div
           className={`${height} rounded-full bg-gradient-to-r ${getColor(score)}`}
           initial={{ width: 0 }}

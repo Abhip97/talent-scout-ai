@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useState } from 'react';
 import { useApp } from '../../context/AppContext.jsx';
 import { PROVIDERS } from '../../utils/llmClient.js';
+import { LogoMark } from '../UI/LogoMark.jsx';
 
 export const Navbar = ({ onGoHome }) => {
   const { theme, toggleTheme, apiKey, provider, setProvider, setShowApiKeyModal, setShowAboutModal } = useApp();
@@ -18,11 +19,9 @@ export const Navbar = ({ onGoHome }) => {
     }`}>
       {/* Logo — click to go back to landing */}
       <button onClick={onGoHome} className="flex items-center gap-3 group">
-        <div className={`w-8 h-8 rounded-xl flex items-center justify-center font-black text-base shadow-lg transition-transform group-hover:scale-105 ${
-          isDark ? 'bg-gradient-to-br from-orange-400 to-orange-600 shadow-orange-500/30' : 'bg-gradient-to-br from-indigo-500 to-violet-600 shadow-indigo-500/20'
-        }`}>
-          🎯
-        </div>
+        <motion.div whileHover={{ scale: 1.08 }} transition={{ type: 'spring', stiffness: 340, damping: 18 }}>
+          <LogoMark size={34} isDark={isDark} animated={false} />
+        </motion.div>
         <div>
           <span className={`font-black text-sm tracking-tight ${isDark ? 'text-orange-50' : 'text-slate-800'}`}>
             TalentScout AI

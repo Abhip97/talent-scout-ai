@@ -1,8 +1,12 @@
 import { motion } from 'framer-motion';
 import { AnimatedCounter } from '../UI/AnimatedCounter.jsx';
 import { Users, Target, MessageSquare, TrendingUp, Trophy } from 'lucide-react';
+import { useApp } from '../../context/AppContext.jsx';
 
 export const ShortlistStats = ({ shortlist, totalCandidates, totalMatched }) => {
+  const { theme } = useApp();
+  const isDark = theme === 'dark';
+
   if (!shortlist?.length) return null;
 
   const avgMatch = Math.round(shortlist.reduce((s, c) => s + (c.totalMatch || 0), 0) / shortlist.length);
@@ -17,6 +21,8 @@ export const ShortlistStats = ({ shortlist, totalCandidates, totalMatched }) => 
     { label: 'Avg Interest Score', value: avgInterest, icon: <TrendingUp size={16} />, color: 'text-cyan-400 bg-cyan-500/10' },
   ];
 
+  const card = isDark ? 'bg-[#12121a] border border-[#1e1e2e]' : 'bg-white border border-slate-200 shadow-sm';
+
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
@@ -26,11 +32,13 @@ export const ShortlistStats = ({ shortlist, totalCandidates, totalMatched }) => 
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: i * 0.07 }}
-            className="bg-[#12121a] border border-[#1e1e2e] rounded-xl p-3 text-center"
+            className={`rounded-xl p-3 text-center ${card}`}
           >
             <div className={`inline-flex p-2 rounded-lg mb-2 ${color}`}>{icon}</div>
-            <div className="text-2xl font-black text-white"><AnimatedCounter value={value} /></div>
-            <div className="text-[11px] text-zinc-500 mt-0.5">{label}</div>
+            <div className={`text-2xl font-black ${isDark ? 'text-white' : 'text-gray-900'}`}>
+              <AnimatedCounter value={value} />
+            </div>
+            <div className={`text-[11px] mt-0.5 ${isDark ? 'text-zinc-500' : 'text-gray-500'}`}>{label}</div>
           </motion.div>
         ))}
       </div>
@@ -44,11 +52,13 @@ export const ShortlistStats = ({ shortlist, totalCandidates, totalMatched }) => 
         >
           <Trophy size={24} className="text-amber-400 shrink-0" />
           <div>
-            <p className="text-xs text-amber-400 font-semibold uppercase tracking-wider mb-0.5">Top Recommendation</p>
-            <p className="text-white font-bold text-lg">{top.name}</p>
-            <p className="text-sm text-zinc-400">{top.title} · Combined Score: <span className="text-amber-300 font-bold">{top.combinedScore}/100</span></p>
+            <p className="text-xs text-amber-500 font-semibold uppercase tracking-wider mb-0.5">Top Recommendation</p>
+            <p className={`font-bold text-lg ${isDark ? 'text-white' : 'text-gray-900'}`}>{top.name}</p>
+            <p className={`text-sm ${isDark ? 'text-zinc-400' : 'text-gray-600'}`}>
+              {top.title} · Combined Score: <span className="text-amber-500 font-bold">{top.combinedScore}/100</span>
+            </p>
             {top.interestBreakdown?.recommendedAction && (
-              <p className="text-xs text-amber-400/70 mt-1">{top.interestBreakdown.recommendedAction}</p>
+              <p className="text-xs text-amber-500/70 mt-1">{top.interestBreakdown.recommendedAction}</p>
             )}
           </div>
         </motion.div>
