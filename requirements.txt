@@ -3,11 +3,7 @@
 # This is a Node.js / React project. To install all packages, run: npm install
 # Python is NOT required. This file is for reference only.
 
-# ── System Requirements ────────────────────────────────────────────────────────
-Node.js          >= 18.0.0     (https://nodejs.org)
-npm              >= 9.0.0      (bundled with Node.js)
-
-# ── External API Keys ──────────────────────────────────────────────────────────
+# ── External API Keys ─────────────────────────────────────────────────────────
 Groq API Key     FREE          (https://console.groq.com/keys)
                                Sign up → Create API Key → starts with "gsk_"
                                No credit card required.
