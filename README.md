@@ -1,231 +1,226 @@
-# 🎯 TalentScout AI — AI-Powered Talent Scouting & Engagement Agent
+# TalentScout AI 🎯
 
-> An autonomous AI recruiting agent that parses job descriptions, discovers candidates from multiple sources, conducts simulated outreach conversations, and produces a ranked shortlist with explainable scoring — all running client-side in the browser.
+An autonomous AI recruiting agent that takes a job description and — in under 5 minutes — discovers candidates, scores their fit, simulates personalised recruiter outreach, and produces a ranked shortlist. Runs entirely in the browser; no backend or server required.
 
-[![Deploy to Netlify](https://www.netlify.com/img/deploy/button.svg)](https://app.netlify.com/start/deploy?repository=https://github.com/yourusername/talent-scout-ai)
-
----
-
-## ✨ Features
-
-- **JD Input** — Paste text or upload PDF/DOCX job descriptions
-- **AI JD Parsing** — Groq LLM extracts structured requirements from any JD
-- **Multi-Source Discovery** — GitHub public API, uploaded resumes (PDF/DOCX), built-in talent pool of 75 candidates
-- **Resume Parsing** — PDF and DOCX resumes parsed into candidate profiles via AI
-- **Deterministic Match Scoring** — 5-dimension weighted scoring with full explanations
-- **Simulated Outreach** — Auto Mode (fully autonomous) or Co-Pilot Mode (recruiter edits)
-- **AI Interest Assessment** — 4-dimension interest scoring from conversation analysis
-- **Ranked Shortlist** — Combined score (60% Match + 40% Interest) with medal rankings
-- **Side-by-Side Compare** — Compare up to 3 candidates across all dimensions
-- **Export** — Download shortlist as CSV or full JSON with conversations
-- **Beautiful UI** — Dark/light mode, framer-motion animations, responsive design
+![React](https://img.shields.io/badge/React-18-61DAFB?style=flat-square&logo=react&logoColor=black)
+![Vite](https://img.shields.io/badge/Vite-5-646CFF?style=flat-square&logo=vite&logoColor=white)
+![Tailwind CSS](https://img.shields.io/badge/Tailwind-v4-38bdf8?style=flat-square&logo=tailwindcss&logoColor=white)
+![License](https://img.shields.io/badge/License-MIT-22c55e?style=flat-square)
 
 ---
 
-## 🏗 Architecture
+## Demo
 
-```mermaid
-flowchart TD
-    A[JD Input\npaste / upload PDF/DOCX] --> B[JD Parser\nGroq LLM]
-    B --> C[Structured Requirements]
+> Paste a JD → configure sources → click **Run Agent** → watch the 5-stage pipeline execute live.
 
-    C --> D[Candidate Discovery]
-    D --> D1[GitHub API Search\nfree, no auth]
-    D --> D2[Resume Upload\nPDF/DOCX + Groq parser]
-    D --> D3[Talent Pool\n75 synthetic candidates]
+The app starts with a marketing landing page. Click **Launch TalentScout AI** (or the navbar logo to return to it). Your "visited" state is saved in `localStorage` so repeat visits open the app directly.
 
-    D1 & D2 & D3 --> E[Matching Engine\ndeterministic scoring]
-    E --> F[Ranked by Match Score\n5 weighted dimensions]
+---
 
-    F --> G[Top 8 candidates\nOutreach Simulator]
-    G --> G1[Auto Mode\nGroq generates full conversation]
-    G --> G2[Co-Pilot Mode\nrecruiter edits each message]
+## Features
 
-    G1 & G2 --> H[Interest Scorer\nGroq LLM]
-    H --> I[Interest Scores\n4 dimensions 0-100]
+- **AI-powered JD parsing** — extracts title, required skills, nice-to-have skills, experience range, salary, location, and work mode from any free-form job description
+- **Multi-source candidate discovery** — 75-candidate built-in talent pool, live GitHub profile search (real URLs, public API), and PDF/DOCX resume uploads — all configurable before you run the agent
+- **Weighted match scoring** — deterministic 5-dimension scoring (skills 40 %, experience 25 %, location 15 %, salary 10 %, education 10 %) with skill alias expansion (`node` = `nodejs` = `node.js`)
+- **Auto & Co-Pilot outreach modes** — Auto runs the full conversation pipeline hands-free; Co-Pilot pauses for you to review and edit each recruiter message
+- **Interest scoring** — 4-dimension LLM analysis of the simulated conversation (enthusiasm · availability · salary alignment · willingness to proceed)
+- **Ranked shortlist** — combined score (60 % match + 40 % interest), sortable table, full candidate report modal, CSV and JSON export
+- **4 AI providers** — Groq (free), OpenAI, Anthropic Claude, Google Gemini — switch from the navbar dropdown at any time
+- **Dark & light theme** — persisted, with distinct design language per theme
+- **No backend** — all API calls go directly from your browser to the AI provider of your choice
 
-    F & I --> J[Combined Ranking\n0.6 × Match + 0.4 × Interest]
-    J --> K[Final Shortlist]
-    K --> L1[Export CSV]
-    K --> L2[Export JSON]
+---
+
+## Pipeline overview
+
+```
+JD Input  →  Parse JD  →  Discover Candidates  →  Match & Score  →  AI Outreach  →  Interest Score  →  Ranked Shortlist
+ (paste /      (LLM)       (talent pool +           (weighted          (Auto or         (LLM on          (combined
+  upload)                   GitHub + resumes)         engine)           Co-Pilot)        conversation)     rank table)
 ```
 
 ---
 
-## 📊 Scoring Methodology
-
-### Match Score (0–100)
-
-| Dimension | Weight | Method |
-|-----------|--------|--------|
-| Skill Match | **40%** | Jaccard intersection of candidate skills vs required. Nice-to-have adds up to +15 bonus |
-| Experience Fit | **25%** | Proximity to required range. Exact = 100, ±1yr = 80, ±2yr = 60, ±3yr = 40, beyond = 20 |
-| Education | **15%** | Degree + field relevance. PhD = 100, M.Tech relevant = 90, B.Tech relevant = 80 |
-| Location | **10%** | City match + relocation willingness + work mode (remote/hybrid/onsite) |
-| Availability | **10%** | Notice period + job-seeking status. Active + immediate = 100, passive = 50, not-looking = 15 |
-
-### Interest Score (0–100)
-
-| Dimension | Weight | Source |
-|-----------|--------|--------|
-| Enthusiasm | 25% | Conversation tone, questions asked, positive language |
-| Availability | 25% | Timeline compatibility, notice period discussion |
-| Salary Alignment | 25% | Expectations vs JD range from conversation |
-| Willingness to Proceed | 25% | Agreed to next steps, interview requests |
-
-### Final Combined Score
-
-```
-Combined = 0.6 × Match Score + 0.4 × Interest Score
-```
-
-Match score is weighted higher (60%) because it's deterministic and based on objective candidate facts.
-Interest score (40%) adds signal from the AI-simulated conversation to gauge enthusiasm and fit.
-
----
-
-## 🛠 Tech Stack
-
-| Layer | Technology |
-|-------|-----------|
-| Frontend | React 18 + Vite 5 |
-| Styling | Tailwind CSS v4 (`@tailwindcss/vite`) |
-| AI / LLM | Groq API — Llama 3.3 70B (free tier) |
-| Candidate Discovery | GitHub REST API (free, no auth needed) |
-| PDF Parsing | pdf.js 4.4 (worker loaded from CDN) |
-| DOCX Parsing | mammoth.js |
-| Animations | Framer Motion |
-| CSV Export | PapaParse |
-| State | React Context API + hooks |
-| Hosting | Netlify (free tier) |
-
----
-
-## 🚀 Getting Started
+## Quick start
 
 ### Prerequisites
 
-- **Node.js 18+**
-- **Free Groq API key** — sign up at [console.groq.com/keys](https://console.groq.com/keys) (no credit card needed)
+- **Node.js 18+** — [nodejs.org](https://nodejs.org)
+- An API key from at least one provider:
 
-### Local Setup
+| Provider | Model | Free? | Get key |
+|---|---|---|---|
+| **Groq** | Llama 3.3 70B | ✅ Free | [console.groq.com/keys](https://console.groq.com/keys) |
+| **Google Gemini** | 1.5 Flash | ✅ Free | [aistudio.google.com](https://aistudio.google.com/app/apikey) |
+| **OpenAI** | GPT-4o Mini | 💳 Paid | [platform.openai.com/api-keys](https://platform.openai.com/api-keys) |
+| **Anthropic Claude** | Haiku 3.5 | 💳 Paid | [console.anthropic.com](https://console.anthropic.com/settings/keys) |
+
+### Install & run
 
 ```bash
-# Clone the repo
-git clone https://github.com/yourusername/talent-scout-ai.git
 cd talent-scout-ai
-
-# Install dependencies
-npm install
-
-# Copy env file and add your Groq API key
-cp .env.example .env
-# Edit .env and set VITE_GROQ_API_KEY=gsk_your_key_here
-
-# Start dev server
-npm run dev
-```
-
-Open [http://localhost:5173](http://localhost:5173) in your browser.
-
-You can also add the API key directly in the app UI — click **"Add API Key"** in the navbar.
-
-### Build for Production
-
-```bash
-npm run build
-# Output in ./dist
-```
-
-### Deploy to Netlify
-
-1. Push your repo to GitHub
-2. Connect to [Netlify](https://netlify.com) → **New site from Git**
-3. Build command: `npm run build`
-4. Publish directory: `dist`
-5. Add environment variable: `VITE_GROQ_API_KEY` (optional — users can enter their own key in the UI)
-
-The `netlify.toml` is pre-configured for SPA routing.
-
----
-
-## 📋 Usage Guide
-
-### 1. Add Your API Key
-Click **"Add API Key"** in the navbar and enter your free Groq API key (`gsk_...`).
-
-### 2. Provide a Job Description
-- **Paste** the JD text directly, or
-- **Upload** a PDF or DOCX file — the text is extracted automatically, or
-- Click **"Try sample JD"** to use the built-in Senior Backend Engineer JD
-
-### 3. Configure Discovery Sources
-Toggle which sources the agent should search:
-- **Talent Pool** — 75 pre-loaded synthetic candidates (always fast)
-- **GitHub** — Searches public profiles by skills and location (needs internet)
-- **Resume Upload** — Upload PDFs/DOCXs in the Discovery tab
-
-### 4. Choose Agent Mode
-- **Auto Mode** — Agent runs conversations completely autonomously
-- **Co-Pilot Mode** — Agent drafts recruiter messages; you edit before "sending"
-
-### 5. Run the Agent
-Click **"Run Agent"** and watch the live activity log as the pipeline executes:
-1. JD parsing → 2. Candidate discovery → 3. Scoring → 4. AI outreach → 5. Interest analysis → 6. Ranked shortlist
-
-### 6. Review Results
-Click any stage in the left sidebar to inspect its output. Click any row in the shortlist table for a full candidate report.
-
-### 7. Export
-Use **Export CSV** or **Export JSON** buttons on the shortlist page.
-
----
-
-## 📋 Sample Input / Output
-
-### Sample JD: Senior Backend Engineer at FinStack Technologies
-
-> 4–8 years experience · Python/Java · Microservices · PostgreSQL · AWS · Docker · Kubernetes · Bangalore (hybrid)
-
-### Sample Output: Ranked Shortlist
-
-| Rank | Candidate | Match | Interest | Combined | Action |
-|------|-----------|-------|----------|----------|--------|
-| 🥇 1 | Priya Sharma | 89 | 85 | 87.4 | Schedule Interview |
-| 🥈 2 | Kiran Joshi | 84 | 82 | 83.2 | Schedule Interview |
-| 🥉 3 | Shilpa Nayak | 81 | 78 | 79.8 | Fast-Track |
-| 4 | Deepika Krishnan | 78 | 71 | 75.2 | Send Role Brief |
-| 5 | Vivek Reddy | 75 | 68 | 72.2 | Schedule Interview |
-
----
-
-## 🔒 Privacy & Security
-
-- **No backend** — all processing happens in your browser
-- **API key** stored only in `localStorage` on your device
-- **No candidate data** sent to any server (except Groq for AI processing)
-- **No tracking, analytics, or data collection**
-
----
-
-## 🤝 Contributing
-
-Pull requests welcome! For major changes, please open an issue first.
-
-```bash
-# Fork and clone
-git checkout -b feature/your-feature
 npm install
 npm run dev
-# Make changes, then PR
+```
+
+Open [http://localhost:5173](http://localhost:5173), click **Add API Key** in the navbar, and paste your key.
+
+### Production build
+
+```bash
+npm run build     # outputs to ./dist
+npm run preview   # preview locally
 ```
 
 ---
 
-## 📄 License
+## Usage walkthrough
 
-MIT — free to use, modify, and distribute.
+**1. Add your API key** — Click **Add API Key** in the navbar. Keys for all 4 providers can be stored simultaneously; switch the active provider from the dropdown.
+
+**2. Paste or upload a JD** — Paste text, upload a PDF/DOCX, or click *Try sample* to load a pre-built Senior Backend Engineer JD.
+
+**3. Configure sources** — Check the discovery sources you want:
+- 📂 **Talent Pool** — instant, 75 built-in candidates
+- 🐙 **GitHub Search** — real GitHub profiles found by skill keywords
+- 📄 **Upload Resumes** — drag-and-drop PDFs/DOCXs directly on the JD page
+
+**4. Choose agent mode** — *Auto* (hands-free) or *Co-Pilot* (review each message).
+
+**5. Click Run Agent** — watch the live activity log. Navigate between pipeline stages using the left sidebar at any point.
+
+**6. Review the shortlist** — Click any candidate row for a full report. Sort by match, interest, or combined score. Export as CSV or JSON.
 
 ---
 
-*Built with ❤️ using Groq + Llama 3.3 70B + React + Tailwind CSS*
+## Scoring methodology
+
+### Match score (0–100)
+
+| Dimension | Weight | Logic |
+|---|---|---|
+| Skills | 40% | Required skills weighted 3×, nice-to-have 1×; alias-aware matching |
+| Experience | 25% | Candidate years vs JD minimum; capped at 100 |
+| Location | 15% | Exact city > same region > open to relocate + work-mode bonus |
+| Salary | 10% | Candidate range vs JD range overlap |
+| Education | 10% | Degree level and field relevance |
+
+### Interest score (0–100)
+
+Scored by the LLM after reading the full simulated conversation:
+
+| Dimension | Weight |
+|---|---|
+| Enthusiasm | 25% |
+| Availability / notice period | 25% |
+| Salary alignment | 25% |
+| Willingness to proceed | 25% |
+
+### Combined score
+
+```
+Combined = (Match × 0.6) + (Interest × 0.4)
+```
+
+---
+
+## Project structure
+
+```
+talent-scout-ai/
+├── src/
+│   ├── App.jsx                      # Root — landing page ↔ main app routing
+│   ├── context/
+│   │   └── AppContext.jsx           # All global state (pipeline, theme, API keys, provider)
+│   ├── hooks/
+│   │   ├── useAgent.js              # Triggers the full 5-stage pipeline
+│   │   ├── useLocalStorage.js       # Persistent state helper
+│   │   └── useFileExtractor.js      # File reading hook
+│   ├── utils/
+│   │   ├── llmClient.js             # Unified LLM client — Groq / OpenAI / Claude / Gemini
+│   │   ├── agentOrchestrator.js     # Orchestrates all 5 stages
+│   │   ├── jdParser.js              # JD text → structured JSON via LLM
+│   │   ├── matchingEngine.js        # Deterministic weighted match scoring
+│   │   ├── outreachSimulator.js     # Recruiter message + candidate reply simulation
+│   │   ├── interestScorer.js        # 4-dimension interest analysis via LLM
+│   │   ├── resumeParser.js          # PDF/DOCX text → candidate profile via LLM
+│   │   ├── fileReader.js            # pdfjs-dist (local worker) + mammoth text extraction
+│   │   ├── githubDiscovery.js       # GitHub Search API integration
+│   │   └── exportUtils.js          # CSV and JSON export helpers
+│   ├── components/
+│   │   ├── Landing/                 # Marketing landing page + in-app welcome screen
+│   │   ├── Layout/                  # Navbar, Sidebar, Footer
+│   │   ├── Agent/                   # Dashboard, controls, status bar, activity log
+│   │   ├── JD/                      # JD input, file upload, parsed JD view
+│   │   ├── Discovery/               # Talent pool browser, GitHub search, resume upload
+│   │   ├── Matching/                # Results table, score breakdown, compare view
+│   │   ├── Outreach/                # Auto mode runner, co-pilot mode, conversation view
+│   │   ├── Shortlist/               # Ranked table, stats, export, candidate report modal
+│   │   ├── Settings/                # API key modal (multi-provider), about modal
+│   │   └── UI/                      # Shared primitives — ScoreBar, SkillTag, Modal, etc.
+│   └── data/
+│       └── candidates.json          # 75-candidate built-in talent pool
+├── index.html
+├── vite.config.js
+├── package.json
+└── requirements.txt
+```
+
+---
+
+## Multi-provider LLM architecture
+
+All LLM calls go through a single `callLLM(provider, apiKey, messages, maxTokens)` function in [`src/utils/llmClient.js`](src/utils/llmClient.js):
+
+- **Groq & OpenAI** — OpenAI-compatible `/chat/completions` endpoint
+- **Anthropic** — native `/v1/messages` with `x-api-key` and `anthropic-version` headers
+- **Google Gemini** — native `generateContent` endpoint with URL-based key
+
+Automatic retry with exponential backoff on rate-limit errors. All providers normalise to the same response format.
+
+---
+
+## Tech stack
+
+| Layer | Technology |
+|---|---|
+| UI framework | React 18 |
+| Build tool | Vite 5 |
+| Styling | Tailwind CSS v4 (no config file — `@tailwindcss/vite` plugin) |
+| Animations | Framer Motion |
+| Icons | Lucide React |
+| PDF parsing | pdfjs-dist 4.x (local worker via `?url` import — version-safe) |
+| DOCX parsing | mammoth |
+| CSV export | PapaParse |
+| Routing | React Router v6 |
+
+---
+
+## Deployment
+
+### Netlify / Vercel
+
+```
+Build command:  npm run build
+Publish dir:    dist
+```
+
+No server-side environment variables are required — users enter their own API keys in the UI. To optionally pre-fill a Groq key:
+
+```
+VITE_GROQ_API_KEY=gsk_your_key_here
+```
+
+---
+
+## Privacy
+
+- **Everything runs in your browser.** No candidate data, resumes, or job descriptions are sent to any server other than the AI provider you choose.
+- API keys are stored only in your browser's `localStorage` and never leave your device.
+- GitHub search uses the public GitHub Search API — no token or authentication required.
+
+---
+
+## License
+
+MIT — free to use, modify, and deploy.
