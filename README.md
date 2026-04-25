@@ -31,12 +31,235 @@ The app starts with a marketing landing page. Click **Launch TalentScout AI** (o
 
 ---
 
-## Pipeline overview
+## Architecture & System Design
+
+### 1. High-level system architecture
+
+The entire application runs **client-side**. There is no backend server. All compute happens in the browser; the only outbound traffic is LLM API calls and the GitHub Search API.
 
 ```
-JD Input  →  Parse JD  →  Discover Candidates  →  Match & Score  →  AI Outreach  →  Interest Score  →  Ranked Shortlist
- (paste /      (LLM)       (talent pool +           (weighted          (Auto or         (LLM on          (combined
-  upload)                   GitHub + resumes)         engine)           Co-Pilot)        conversation)     rank table)
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                          Browser  (Client-Side Only)                        │
+│                                                                             │
+│  ┌─────────────────────────────────────────────────────────────────────┐   │
+│  │  React SPA  (Vite 5 + Tailwind v4 + Framer Motion)                 │   │
+│  │                                                                     │   │
+│  │   Landing Page  ──►  Main App (5-Stage Pipeline UI)                │   │
+│  │                              │                                     │   │
+│  │              ┌───────────────▼───────────────────┐                 │   │
+│  │              │        AppContext (State)          │                 │   │
+│  │              │  jdText · parsedJD · candidates   │◄──localStorage  │   │
+│  │              │  matchResults · conversations     │   (API keys,    │   │
+│  │              │  shortlist · agentState · logs    │    theme,       │   │
+│  │              └───────────────┬───────────────────┘    provider)   │   │
+│  │                              │                                     │   │
+│  │              ┌───────────────▼───────────────────┐                 │   │
+│  │              │    agentOrchestrator.js            │                 │   │
+│  │              │    (5-stage pipeline runner)       │                 │   │
+│  │              └──┬────────┬────────┬────────┬──────┘                 │   │
+│  │                 │        │        │        │                        │   │
+│  │           jdParser  matchingEngine  outreachSimulator  interestScorer  │
+│  │           resumeParser  fileReader  githubDiscovery  exportUtils    │   │
+│  │                 │                             │                     │   │
+│  │              ┌──▼─────────────────────────────▼──┐                 │   │
+│  │              │        llmClient.js               │                 │   │
+│  │              │   (unified multi-provider router)  │                 │   │
+│  └──────────────┴──────────────┬────────────────────┴─────────────────┘   │
+└─────────────────────────────────┼───────────────────────────────────────────┘
+                                  │  HTTPS
+          ┌───────────────────────┼───────────────────────┐
+          ▼                       ▼                       ▼                   ▼
+   ⚡ Groq API            🤖 OpenAI API         🧠 Anthropic API     ✨ Gemini API
+  Llama 3.3 70B           GPT-4o Mini          Claude Haiku 3.5     1.5 Flash
+  (Free tier)             (Paid)               (Paid)               (Free tier)
+
+                    🐙 GitHub Search API  (public, no auth required)
+```
+
+---
+
+### 2. Five-stage pipeline data flow
+
+Each stage produces a typed output that feeds directly into the next stage.
+
+```mermaid
+flowchart TD
+    START(["▶  User clicks Run Agent"]):::start --> S1
+
+    subgraph S1["① JD Parsing  •  jdParser.js + LLM"]
+        J1["Input: raw JD text\npaste · PDF · DOCX"]
+        J2["LLM prompt:\nextract structured requirements"]
+        J3["Output: ParsedJD\n{ title, company, requiredSkills[],\n  niceToHaveSkills[], yearsExp,\n  salaryRange, location, workMode }"]
+        J1 --> J2 --> J3
+    end
+
+    S1 --> S2
+
+    subgraph S2["② Candidate Discovery  •  3 parallel sources"]
+        D1["📂 Talent Pool\ncandidates.json\n75 pre-built profiles"]
+        D2["🐙 GitHub Search API\nquery by skills + location\nreal profile URLs"]
+        D3["📄 Resume Upload\npdfjs / mammoth → text\nresumeParser.js + LLM"]
+        D4["Merge & normalise\n→ Candidate[]"]
+        D1 & D2 & D3 --> D4
+    end
+
+    S2 --> S3
+
+    subgraph S3["③ Match Scoring  •  matchingEngine.js  (deterministic)"]
+        M1["Input: Candidate[] + ParsedJD"]
+        M2["Weighted engine\nSkills 40%  ·  Experience 25%\nLocation 15%  ·  Salary 10%\nEducation 10%"]
+        M3["Output: ScoredCandidate[]\n{ totalMatch 0-100,\n  skillScore, expScore, … }"]
+        M4["Sort ↓ by totalMatch\nSelect top 8 for outreach"]
+        M1 --> M2 --> M3 --> M4
+    end
+
+    S3 --> S4
+
+    subgraph S4["④ AI Outreach  •  outreachSimulator.js"]
+        O1["Auto Mode\nLLM drafts recruiter message\n→ LLM simulates candidate reply\n→ 2-3 conversation turns"]
+        O2["Co-Pilot Mode\nLLM drafts message\n→ Recruiter edits / approves\n→ LLM simulates reply"]
+        O3["Output: Conversation[]\n{ role, message, timestamp }[]"]
+        O1 & O2 --> O3
+    end
+
+    S4 --> S5
+
+    subgraph S5["⑤ Interest Scoring  •  interestScorer.js + LLM"]
+        I1["Input: Conversation + Candidate + ParsedJD"]
+        I2["LLM analysis\nEnthusiasm · Availability\nSalary Alignment · Willingness"]
+        I3["Output: InterestScore\n{ totalInterest 0-100,\n  breakdown{}, recommendedAction }"]
+        I1 --> I2 --> I3
+    end
+
+    S5 --> FINAL
+
+    subgraph FINAL["⑥ Final Ranking  •  RankedShortlist component"]
+        F1["Combined = Match × 0.6 + Interest × 0.4"]
+        F2["Sort descending → ShortlistedCandidate[]"]
+        F3["Render ranked table\n+ candidate report modal"]
+        F4["Export CSV  /  Export JSON"]
+        F1 --> F2 --> F3 --> F4
+    end
+
+    classDef start fill:#f97316,color:#fff,stroke:none
+```
+
+---
+
+### 3. LLM client — multi-provider routing & retry
+
+```mermaid
+flowchart LR
+    IN["callLLM(provider, apiKey,\nmessages, maxTokens)"]
+
+    IN --> R{provider?}
+
+    R -- groq --> A["callOpenAICompat()\napi.groq.com/openai/v1/chat/completions\nmodel: llama-3.3-70b-versatile\nAuthorization: Bearer {key}"]
+    R -- openai --> B["callOpenAICompat()\napi.openai.com/v1/chat/completions\nmodel: gpt-4o-mini\nAuthorization: Bearer {key}"]
+    R -- anthropic --> C["callAnthropic()\napi.anthropic.com/v1/messages\nmodel: claude-3-5-haiku-20241022\nx-api-key · anthropic-version: 2023-06-01"]
+    R -- google --> D["callGemini()\ngenerativelanguage.googleapis.com/…\nmodel: gemini-1.5-flash\n?key={apiKey}"]
+
+    A & B & C & D --> E{HTTP status}
+
+    E -- "429 Rate Limit" --> F["sleep 10 s\nretry ≤ 2 ×"]
+    E -- "401 / 403 Auth" --> G["throw INVALID_API_KEY\n(no retry)"]
+    E -- "Network error" --> H["throw NETWORK_ERROR\n(no retry)"]
+    E -- "5xx / other" --> I["sleep 1s × attempt\nretry ≤ 2 ×"]
+    E -- "200 OK" --> J["parseJSON(raw)\nstrip fences · regex fallback"]
+
+    F --> R
+    I --> R
+
+    J -- "valid JSON" --> K["✅ return parsed object\nto caller"]
+    J -- "JSON_PARSE_ERROR" --> L["⚠️ caller fallback\n(e.g. generateDefaultScore)"]
+```
+
+---
+
+### 4. React component tree
+
+```
+App.jsx  (BrowserRouter + AppProvider)
+└── MainLayout
+    ├── Navbar              ← provider dropdown · API key · theme toggle · logo→home
+    │
+    ├── [AnimatePresence]
+    │   ├── LandingPage     ← hero · stats · pipeline viz · feature cards · CTA
+    │   │
+    │   └── App view  (h-screen flex layout)
+    │       ├── Sidebar     ← pipeline stage nav · stats · recent activity · run indicator
+    │       └── main  (scrollable)
+    │           ├── AgentDashboard
+    │           │   ├── AgentControls   ← Auto/Co-Pilot toggle · Run Agent button
+    │           │   ├── AgentStatusBar  ← progress bar · stage dots · percentage
+    │           │   │
+    │           │   ├── [AnimatePresence — active stage]
+    │           │   │   ├── JDInput          stage: jd
+    │           │   │   │   └── DragDropZone (resume upload, inline)
+    │           │   │   ├── CandidateDiscovery  stage: discovery
+    │           │   │   │   ├── TalentPool
+    │           │   │   │   ├── GitHubSearch
+    │           │   │   │   └── ResumeUpload
+    │           │   │   ├── MatchResults     stage: matching
+    │           │   │   │   ├── MatchFilters
+    │           │   │   │   ├── CandidateCard  ×N
+    │           │   │   │   │   └── ScoreBreakdown (expand)
+    │           │   │   │   └── CompareView (modal)
+    │           │   │   ├── OutreachPanel    stage: outreach
+    │           │   │   │   ├── AutoModeRunner
+    │           │   │   │   ├── CoPilotMode
+    │           │   │   │   └── ConversationView  ×N
+    │           │   │   └── RankedShortlist  stage: shortlist
+    │           │   │       ├── ShortlistStats
+    │           │   │       ├── ExportButtons
+    │           │   │       └── Modal → CandidateReport
+    │           │   │
+    │           │   └── AgentActivityLog    ← live terminal log
+    │           │
+    │           └── Footer
+    │
+    ├── ApiKeyModal         ← tabs: Groq · OpenAI · Claude · Gemini
+    └── AboutModal          ← scoring methodology explainer
+```
+
+---
+
+### 5. State management & data flow
+
+```mermaid
+flowchart TD
+    LS[("localStorage\napi_keys · provider\ntheme · visited")]
+
+    subgraph CTX["AppContext  —  single source of truth"]
+        direction LR
+        C1["provider · apiKeys\n(active LLM provider + keys)"]
+        C2["jdText · parsedJD\n(JD input + parsed struct)"]
+        C3["candidates[]\n(all discovered)"]
+        C4["matchResults[]\n(scored + ranked)"]
+        C5["conversations{}\n(per candidateId)"]
+        C6["shortlist[]\n(final combined rank)"]
+        C7["agentState\nIDLE › PARSING_JD\n› DISCOVERING › MATCHING\n› OUTREACH › SCORING\n› COMPLETE"]
+        C8["agentLogs[]\n(live activity feed)"]
+        C9["sources{}\ntalentPool · github · resumes[]"]
+    end
+
+    CTX <--> LS
+
+    UA["useAgent.js\ncalls runAgentPipeline()"]
+    UA --> ORCH["agentOrchestrator.js"]
+
+    ORCH -- "onParsedJD(jd)" --> C2
+    ORCH -- "onCandidatesFound([])" --> C3
+    ORCH -- "onMatchResults([])" --> C4
+    ORCH -- "onConversationUpdate()" --> C5
+    ORCH -- "onShortlist([])" --> C6
+    ORCH -- "onStateChange(state)" --> C7
+    ORCH -- "onLog(entry)" --> C8
+
+    C7 -- "PARSING_JD → 'jd'\nDISCOVERING → 'discovery'\nMATCHING → 'matching'\nOUTREACH → 'outreach'\nCOMPLETE → 'shortlist'" --> ACTIVE["activeStage\n(controls which component renders)"]
+
+    ACTIVE --> SB["Sidebar highlights active stage"]
+    ACTIVE --> DB["AgentDashboard renders\ncorresponding stage component"]
 ```
 
 ---
@@ -165,18 +388,6 @@ talent-scout-ai/
 ├── package.json
 └── requirements.txt
 ```
-
----
-
-## Multi-provider LLM architecture
-
-All LLM calls go through a single `callLLM(provider, apiKey, messages, maxTokens)` function in [`src/utils/llmClient.js`](src/utils/llmClient.js):
-
-- **Groq & OpenAI** — OpenAI-compatible `/chat/completions` endpoint
-- **Anthropic** — native `/v1/messages` with `x-api-key` and `anthropic-version` headers
-- **Google Gemini** — native `generateContent` endpoint with URL-based key
-
-Automatic retry with exponential backoff on rate-limit errors. All providers normalise to the same response format.
 
 ---
 
