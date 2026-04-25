@@ -1,11 +1,11 @@
-const PDF_WORKER_SRC = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.4.168/pdf.worker.min.mjs';
+import pdfWorkerSrc from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
 
 let pdfjsLib = null;
 
 const loadPdfjs = async () => {
   if (pdfjsLib) return pdfjsLib;
   const pdfjs = await import('pdfjs-dist');
-  pdfjs.GlobalWorkerOptions.workerSrc = PDF_WORKER_SRC;
+  pdfjs.GlobalWorkerOptions.workerSrc = pdfWorkerSrc;
   pdfjsLib = pdfjs;
   return pdfjsLib;
 };
@@ -33,11 +33,15 @@ export const extractTextFromPDF = async (file) => {
 
 export const extractTextFromDOCX = async (file) => {
   try {
-    const mammoth = await import('mammoth');
+    const mod = await import('mammoth');
+    const mammoth = mod.default || mod;
     const arrayBuffer = await file.arrayBuffer();
     const result = await mammoth.extractRawText({ arrayBuffer });
     return result.value.trim();
-  } catch {
+  } catch (err) {
+    if (err.message?.includes('extractRawText')) {
+      throw new Error(`Could not read ${file.name}. DOCX parsing failed.`);
+    }
     throw new Error(`Could not read ${file.name}. The file may be corrupted.`);
   }
 };

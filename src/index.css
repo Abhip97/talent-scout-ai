@@ -16,51 +16,65 @@
   to { transform: rotate(360deg); }
 }
 
-* {
-  box-sizing: border-box;
+@keyframes pulse-ring {
+  0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(249, 115, 22, 0.5); }
+  70% { transform: scale(1); box-shadow: 0 0 0 8px rgba(249, 115, 22, 0); }
+  100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(249, 115, 22, 0); }
 }
 
-html {
-  scroll-behavior: smooth;
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
 }
+
+* { box-sizing: border-box; }
+
+html { scroll-behavior: smooth; }
 
 body {
   margin: 0;
-  background-color: #0a0a0f;
-  color: #ffffff;
   font-family: var(--font-family-sans);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-::-webkit-scrollbar {
-  width: 5px;
-  height: 5px;
-}
+/* Dark scrollbar */
+.dark ::-webkit-scrollbar { width: 4px; height: 4px; }
+.dark ::-webkit-scrollbar-track { background: transparent; }
+.dark ::-webkit-scrollbar-thumb { background: rgba(249,115,22,0.2); border-radius: 9999px; }
+.dark ::-webkit-scrollbar-thumb:hover { background: rgba(249,115,22,0.4); }
 
-::-webkit-scrollbar-track {
-  background: #0a0a0f;
-}
+/* Light scrollbar */
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 9999px; }
+::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
 
-::-webkit-scrollbar-thumb {
-  background: #2a2a3e;
-  border-radius: 9999px;
-}
+.dark ::selection { background-color: rgba(249, 115, 22, 0.3); color: #fff7ed; }
+::selection { background-color: rgba(79, 70, 229, 0.2); color: #1e1b4b; }
 
-::-webkit-scrollbar-thumb:hover {
-  background: #3a3a5e;
-}
-
-::selection {
-  background-color: rgba(99, 102, 241, 0.3);
-  color: #ffffff;
-}
-
-input[type="range"] {
-  cursor: pointer;
-}
+input[type="range"] { cursor: pointer; }
 
 .animate-shimmer {
   animation: shimmer 1.5s ease-in-out infinite;
   background-size: 200% 100%;
+}
+
+.animate-float {
+  animation: float 3s ease-in-out infinite;
+}
+
+.animate-pulse-ring {
+  animation: pulse-ring 2s cubic-bezier(0.455, 0.030, 0.515, 0.955) infinite;
+}
+
+/* Orange glow for dark mode cards */
+.dark .glow-card {
+  box-shadow: 0 0 0 1px rgba(249,115,22,0.08), 0 4px 24px rgba(249,115,22,0.06);
+}
+
+/* Glass effect */
+.glass {
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
 }

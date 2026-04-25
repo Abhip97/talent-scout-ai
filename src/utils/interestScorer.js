@@ -1,4 +1,4 @@
-import { callGroq, parseJSON } from './groqClient.js';
+import { callLLM, parseJSON } from './llmClient.js';
 
 const buildScoringPrompt = (candidate, parsedJD, messages) => `Analyze this recruitment conversation and score the candidate's genuine interest level.
 
@@ -41,7 +41,7 @@ Respond ONLY in JSON (no markdown, no backticks):
   "greenFlags": ["positive signal1"]
 }`;
 
-export const scoreInterest = async (candidate, parsedJD, messages, apiKey) => {
+export const scoreInterest = async (candidate, parsedJD, messages, apiKey, provider = 'groq') => {
   if (!messages || messages.length === 0) {
     return generateDefaultScore(candidate, parsedJD);
   }
@@ -52,18 +52,12 @@ export const scoreInterest = async (candidate, parsedJD, messages, apiKey) => {
   ];
 
   try {
-    const raw = await callGroq(apiKey, systemMessages, 1000);
+    const raw = await callLLM(provider, apiKey, systemMessages, 1800);
     const parsed = parseJSON(raw);
     return sanitizeInterestScore(parsed, candidate, parsedJD);
   } catch (err) {
     if (err.message === 'JSON_PARSE_ERROR') {
-      try {
-        const raw = await callGroq(apiKey, systemMessages, 1000);
-        const parsed = parseJSON(raw);
-        return sanitizeInterestScore(parsed, candidate, parsedJD);
-      } catch {
-        return generateDefaultScore(candidate, parsedJD);
-      }
+      return generateDefaultScore(candidate, parsedJD);
     }
     throw err;
   }
@@ -78,7 +72,9 @@ const sanitizeInterestScore = (parsed, candidate) => {
   const total = parsed.totalInterest || (enthusiasm + availability + salary + willingness);
 
   const validActions = ['Schedule Interview', 'Send Detailed Role Brief', 'Negotiate Compensation', 'Fast-Track (High Interest)', 'Add to Talent Pipeline', 'Do Not Pursue'];
-  const action = validActions.includes(parsed.recommendedAction) ? parsed.recommendedAction : (total >= 70 ? 'Schedule Interview' : total >= 50 ? 'Send Detailed Role Brief' : 'Add to Talent Pipeline');
+  const action = validActions.includes(parsed.recommendedAction)
+    ? parsed.recommendedAction
+    : total >= 70 ? 'Schedule Interview' : total >= 50 ? 'Send Detailed Role Brief' : 'Add to Talent Pipeline';
 
   return {
     totalInterest: Math.min(100, Math.max(0, total)),

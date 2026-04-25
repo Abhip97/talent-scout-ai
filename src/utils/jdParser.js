@@ -1,4 +1,4 @@
-import { callGroq, parseJSON } from './groqClient.js';
+import { callLLM, parseJSON } from './llmClient.js';
 
 const SYSTEM_PROMPT = `You are a JD parser. Extract structured fields from this job description. Respond ONLY in valid JSON with no markdown formatting, no backticks, no explanation. Return exactly this structure:
 {
@@ -17,7 +17,7 @@ const SYSTEM_PROMPT = `You are a JD parser. Extract structured fields from this 
   "benefits": ["benefit1", "benefit2"]
 }`;
 
-export const parseJD = async (jdText, apiKey) => {
+export const parseJD = async (jdText, apiKey, provider = 'groq') => {
   if (!jdText || jdText.trim().length < 50) {
     throw new Error('Job description is too short. Please provide a more detailed JD.');
   }
@@ -29,12 +29,12 @@ export const parseJD = async (jdText, apiKey) => {
 
   let rawResponse;
   try {
-    rawResponse = await callGroq(apiKey, messages, 1500);
+    rawResponse = await callLLM(provider, apiKey, messages, 1500);
     const parsed = parseJSON(rawResponse);
     return sanitizeParsedJD(parsed);
   } catch (err) {
     if (err.message === 'JSON_PARSE_ERROR') {
-      rawResponse = await callGroq(apiKey, messages, 1500);
+      rawResponse = await callLLM(provider, apiKey, messages, 1500);
       const parsed = parseJSON(rawResponse);
       return sanitizeParsedJD(parsed);
     }

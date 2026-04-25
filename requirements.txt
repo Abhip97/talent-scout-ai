@@ -1,0 +1,46 @@
+# TalentScout AI — Project Requirements
+# =======================================
+# This is a Node.js / React project. To install all packages, run: npm install
+# Python is NOT required. This file is for reference only.
+
+# ── System Requirements ────────────────────────────────────────────────────────
+Node.js          >= 18.0.0     (https://nodejs.org)
+npm              >= 9.0.0      (bundled with Node.js)
+
+# ── External API Keys ──────────────────────────────────────────────────────────
+Groq API Key     FREE          (https://console.groq.com/keys)
+                               Sign up → Create API Key → starts with "gsk_"
+                               No credit card required.
+
+# ── Runtime Dependencies (npm) ─────────────────────────────────────────────────
+react                  ^18.3.1    UI framework
+react-dom              ^18.3.1    React DOM renderer
+react-router-dom       ^6.26.0    Client-side routing
+framer-motion          ^11.3.0    Animations and transitions
+lucide-react           ^0.400.0   Icon library
+pdfjs-dist             ^4.4.168   PDF text extraction (browser-side)
+mammoth                ^1.8.0     DOCX text extraction (browser-side)
+papaparse              ^5.4.1     CSV generation and download
+
+# ── Dev Dependencies (npm) ─────────────────────────────────────────────────────
+vite                   ^5.4.0     Build tool and dev server
+@vitejs/plugin-react   ^4.3.1     React JSX transform for Vite
+tailwindcss            ^4.0.0     Utility-first CSS framework
+@tailwindcss/vite      ^4.0.0     Tailwind v4 Vite plugin (no config file needed)
+
+# ── Setup Instructions ─────────────────────────────────────────────────────────
+# 1. Install Node.js 18+ from https://nodejs.org
+# 2. Open a terminal in this project folder
+# 3. Run:  npm install
+# 4. Run:  npm run dev
+# 5. Open: http://localhost:5173
+# 6. Click "Add API Key" in the navbar and enter your Groq key
+
+# ── Build for Production ───────────────────────────────────────────────────────
+# npm run build      → outputs to ./dist
+# npm run preview    → preview the production build locally
+
+# ── Deployment (Netlify) ───────────────────────────────────────────────────────
+# Build command:   npm run build
+# Publish dir:     dist
+# Env variable:    VITE_GROQ_API_KEY=gsk_your_key   (optional — users can enter their own)

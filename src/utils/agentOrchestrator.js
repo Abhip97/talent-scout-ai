@@ -20,6 +20,7 @@ export const runAgentPipeline = async ({
   jdText,
   sources,
   apiKey,
+  provider = 'groq',
   agentMode,
   onLog,
   onStateChange,
@@ -39,7 +40,7 @@ export const runAgentPipeline = async ({
 
     let parsedJD;
     try {
-      parsedJD = await parseJD(jdText, apiKey);
+      parsedJD = await parseJD(jdText, apiKey, provider);
       onParsedJD(parsedJD);
       onLog(makeLog('✅', `JD parsed — "${parsedJD.title}"${parsedJD.company ? ` at ${parsedJD.company}` : ''} | Requires: ${(parsedJD.requiredSkills || []).slice(0, 4).join(', ')}`));
     } catch (err) {
@@ -71,14 +72,11 @@ export const runAgentPipeline = async ({
         sources.resumes,
         apiKey,
         ({ fileName, status, candidate, error }) => {
-          if (status === 'parsing') {
-            onLog(makeLog('📄', `Parsing resume: ${fileName}...`, 'running'));
-          } else if (status === 'done') {
-            onLog(makeLog('✅', `Parsed ${fileName} — ${candidate.name}, ${candidate.title}`));
-          } else if (status === 'error') {
-            onLog(makeLog('❌', `Failed to parse ${fileName}: ${error}`, 'error'));
-          }
-        }
+          if (status === 'parsing') onLog(makeLog('📄', `Parsing resume: ${fileName}...`, 'running'));
+          else if (status === 'done') onLog(makeLog('✅', `Parsed ${fileName} — ${candidate.name}, ${candidate.title}`));
+          else if (status === 'error') onLog(makeLog('❌', `Failed to parse ${fileName}: ${error}`, 'error'));
+        },
+        provider
       );
 
       allCandidates = [...allCandidates, ...parsedResumes];
@@ -144,7 +142,7 @@ export const runAgentPipeline = async ({
       try {
         let msgs;
         if (agentMode === 'auto' || agentMode !== 'copilot') {
-          msgs = await runAutoConversation(candidate, parsedJD, apiKey);
+          msgs = await runAutoConversation(candidate, parsedJD, apiKey, provider);
         } else {
           msgs = [];
         }
@@ -157,7 +155,7 @@ export const runAgentPipeline = async ({
         if (isRateLimit) {
           await sleep(10000);
           try {
-            const msgs = await runAutoConversation(candidate, parsedJD, apiKey);
+            const msgs = await runAutoConversation(candidate, parsedJD, apiKey, provider);
             conversations[candidate.id] = msgs;
             onConversationUpdate({ candidateId: candidate.id, messages: msgs });
             onLog(makeLog('✅', `${candidate.name} responded (retry succeeded)`));
@@ -179,7 +177,7 @@ export const runAgentPipeline = async ({
       if (!msgs) continue;
 
       try {
-        const interest = await scoreInterest(candidate, parsedJD, msgs, apiKey);
+        const interest = await scoreInterest(candidate, parsedJD, msgs, apiKey, provider);
         interestScores[candidate.id] = interest;
         onLog(makeLog('✅', `${candidate.name}: Interest ${interest.totalInterest}/100 — ${interest.recommendedAction}`));
       } catch (err) {
@@ -196,13 +194,7 @@ export const runAgentPipeline = async ({
       .map((c) => {
         const interest = interestScores[c.id] || { totalInterest: 50 };
         const combined = Math.round(0.6 * c.totalMatch + 0.4 * interest.totalInterest);
-        return {
-          ...c,
-          interestScore: interest.totalInterest,
-          interestBreakdown: interest,
-          combinedScore: combined,
-          conversation: conversations[c.id] || [],
-        };
+        return { ...c, interestScore: interest.totalInterest, interestBreakdown: interest, combinedScore: combined, conversation: conversations[c.id] || [] };
       })
       .sort((a, b) => b.combinedScore - a.combinedScore);
 

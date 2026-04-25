@@ -1,4 +1,4 @@
-import { callGroq, parseJSON } from './groqClient.js';
+import { callLLM, parseJSON } from './llmClient.js';
 
 const buildAutoSystemPrompt = (candidate, parsedJD) => `You are simulating a realistic recruitment outreach conversation between a recruiter from ${parsedJD.company || 'our company'} and a candidate named ${candidate.name}.
 
@@ -69,53 +69,50 @@ ${conversationHistory.map((m) => `${m.role === 'recruiter' ? 'Recruiter' : candi
 
 Draft the recruiter's next message. Be natural, responsive to what the candidate said, keep momentum going. 2-3 sentences. No formatting.`;
 
-export const runAutoConversation = async (candidate, parsedJD, apiKey) => {
-  const systemPrompt = buildAutoSystemPrompt(candidate, parsedJD);
+export const runAutoConversation = async (candidate, parsedJD, apiKey, provider = 'groq') => {
   const messages = [
-    { role: 'system', content: systemPrompt },
+    { role: 'system', content: buildAutoSystemPrompt(candidate, parsedJD) },
     { role: 'user', content: 'Generate the conversation now.' },
   ];
 
   try {
-    const raw = await callGroq(apiKey, messages, 2000);
+    const raw = await callLLM(provider, apiKey, messages, 2000);
     const parsed = parseJSON(raw);
     if (!Array.isArray(parsed.messages)) throw new Error('JSON_PARSE_ERROR');
     return parsed.messages;
   } catch (err) {
     if (err.message === 'JSON_PARSE_ERROR') {
-      const raw = await callGroq(apiKey, messages, 2000);
+      const raw = await callLLM(provider, apiKey, messages, 2000);
       const parsed = parseJSON(raw);
-      if (!Array.isArray(parsed.messages)) {
-        return generateFallbackConversation(candidate, parsedJD);
-      }
+      if (!Array.isArray(parsed.messages)) return generateFallbackConversation(candidate, parsedJD);
       return parsed.messages;
     }
     throw err;
   }
 };
 
-export const draftInitialMessage = async (candidate, parsedJD, apiKey) => {
+export const draftInitialMessage = async (candidate, parsedJD, apiKey, provider = 'groq') => {
   const messages = [
     { role: 'system', content: buildCoPilotDraftPrompt(candidate, parsedJD) },
     { role: 'user', content: 'Draft the outreach message now.' },
   ];
-  return callGroq(apiKey, messages, 800);
+  return callLLM(provider, apiKey, messages, 800);
 };
 
-export const getCandidateResponse = async (candidate, recruiterMessage, conversationHistory, apiKey) => {
+export const getCandidateResponse = async (candidate, recruiterMessage, conversationHistory, apiKey, provider = 'groq') => {
   const messages = [
     { role: 'system', content: buildCandidateResponsePrompt(candidate, recruiterMessage, conversationHistory) },
     { role: 'user', content: 'Respond as the candidate.' },
   ];
-  return callGroq(apiKey, messages, 400);
+  return callLLM(provider, apiKey, messages, 400);
 };
 
-export const draftFollowUp = async (candidate, parsedJD, conversationHistory, apiKey) => {
+export const draftFollowUp = async (candidate, parsedJD, conversationHistory, apiKey, provider = 'groq') => {
   const messages = [
     { role: 'system', content: buildFollowUpDraftPrompt(candidate, parsedJD, conversationHistory) },
     { role: 'user', content: 'Draft the follow-up message.' },
   ];
-  return callGroq(apiKey, messages, 400);
+  return callLLM(provider, apiKey, messages, 400);
 };
 
 const generateFallbackConversation = (candidate, parsedJD) => {

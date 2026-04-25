@@ -9,9 +9,17 @@ export const useApp = () => {
   return ctx;
 };
 
+const DEFAULT_KEYS = { groq: '', openai: '', anthropic: '', google: '' };
+
 export const AppProvider = ({ children }) => {
-  const [apiKey, setApiKey] = useLocalStorage('talentscout_api_key', '');
+  const [provider, setProvider] = useLocalStorage('talentscout_provider', 'groq');
+  const [apiKeys, setApiKeys] = useLocalStorage('talentscout_api_keys', DEFAULT_KEYS);
   const [theme, setTheme] = useLocalStorage('talentscout_theme', 'dark');
+
+  const apiKey = apiKeys[provider] || '';
+  const setApiKey = useCallback((key) => {
+    setApiKeys((prev) => ({ ...DEFAULT_KEYS, ...prev, [provider]: key }));
+  }, [provider, setApiKeys]);
 
   const [jdText, setJdText] = useState('');
   const [parsedJD, setParsedJD] = useState(null);
@@ -25,14 +33,11 @@ export const AppProvider = ({ children }) => {
   const [agentMode, setAgentMode] = useState('auto');
   const [isRunning, setIsRunning] = useState(false);
   const [error, setError] = useState(null);
-  const [sources, setSources] = useState({
-    talentPool: true,
-    github: false,
-    resumes: [],
-  });
+  const [sources, setSources] = useState({ talentPool: true, github: false, resumes: [] });
 
   const [showApiKeyModal, setShowApiKeyModal] = useState(false);
   const [showAboutModal, setShowAboutModal] = useState(false);
+  const [showApp, setShowApp] = useLocalStorage('talentscout_visited', false);
 
   const addLog = useCallback((entry) => {
     setAgentLogs((prev) => [...prev, { ...entry, id: entry.id || `log_${Date.now()}` }]);
@@ -61,7 +66,9 @@ export const AppProvider = ({ children }) => {
   }, [setTheme]);
 
   const value = {
+    provider, setProvider,
     apiKey, setApiKey,
+    apiKeys, setApiKeys,
     theme, toggleTheme,
     jdText, setJdText,
     parsedJD, setParsedJD,
@@ -78,6 +85,7 @@ export const AppProvider = ({ children }) => {
     sources, setSources,
     showApiKeyModal, setShowApiKeyModal,
     showAboutModal, setShowAboutModal,
+    showApp, setShowApp,
     resetPipeline,
   };
 
