@@ -7,6 +7,8 @@ An autonomous AI recruiting agent that takes a job description and — in under 
 ![Tailwind CSS](https://img.shields.io/badge/Tailwind-v4-38bdf8?style=flat-square&logo=tailwindcss&logoColor=white)
 ![License](https://img.shields.io/badge/License-MIT-22c55e?style=flat-square)
 
+Deployed on Vercel: https://talent-scout-ai-pi.vercel.app/
+
 ---
 
 ## Demo
@@ -41,30 +43,30 @@ The entire application runs **client-side**. There is no backend server. All com
 ┌─────────────────────────────────────────────────────────────────────────────┐
 │                          Browser  (Client-Side Only)                        │
 │                                                                             │
-│  ┌─────────────────────────────────────────────────────────────────────┐   │
-│  │  React SPA  (Vite 5 + Tailwind v4 + Framer Motion)                 │   │
-│  │                                                                     │   │
-│  │   Landing Page  ──►  Main App (5-Stage Pipeline UI)                │   │
-│  │                              │                                     │   │
-│  │              ┌───────────────▼───────────────────┐                 │   │
-│  │              │        AppContext (State)          │                 │   │
-│  │              │  jdText · parsedJD · candidates   │◄──localStorage  │   │
-│  │              │  matchResults · conversations     │   (API keys,    │   │
-│  │              │  shortlist · agentState · logs    │    theme,       │   │
-│  │              └───────────────┬───────────────────┘    provider)   │   │
-│  │                              │                                     │   │
-│  │              ┌───────────────▼───────────────────┐                 │   │
-│  │              │    agentOrchestrator.js            │                 │   │
-│  │              │    (5-stage pipeline runner)       │                 │   │
-│  │              └──┬────────┬────────┬────────┬──────┘                 │   │
-│  │                 │        │        │        │                        │   │
-│  │           jdParser  matchingEngine  outreachSimulator  interestScorer  │
-│  │           resumeParser  fileReader  githubDiscovery  exportUtils    │   │
-│  │                 │                             │                     │   │
-│  │              ┌──▼─────────────────────────────▼──┐                 │   │
-│  │              │        llmClient.js               │                 │   │
-│  │              │   (unified multi-provider router)  │                 │   │
-│  └──────────────┴──────────────┬────────────────────┴─────────────────┘   │
+│  ┌─────────────────────────────────────────────────────────────────────┐    │
+│  │  React SPA  (Vite 5 + Tailwind v4 + Framer Motion)                  │    │
+│  │                                                                     │    │
+│  │   Landing Page  ──►  Main App (5-Stage Pipeline UI)                 │    │
+│  │                              │                                      │    │
+│  │              ┌───────────────▼───────────────────┐                  │    │
+│  │              │        AppContext (State)          │                 │    │
+│  │              │  jdText · parsedJD · candidates   │◄──localStorage   │    │
+│  │              │  matchResults · conversations     │   (API keys,     │    │
+│  │              │  shortlist · agentState · logs    │    theme,        │    │
+│  │              └───────────────┬───────────────────┘    provider)     │    │
+│  │                              │                                      │    │
+│  │              ┌───────────────▼───────────────────┐                  │    │
+│  │              │    agentOrchestrator.js            │                 │    │
+│  │              │    (5-stage pipeline runner)       │                 │    │
+│  │              └──┬────────┬────────┬────────┬──────┘                 │    │
+│  │                 │        │        │        │                        │    │ 
+│  │           jdParser  matchingEngine  outreachSimulator  interestScorer    │
+│  │           resumeParser  fileReader  githubDiscovery  exportUtils    │    │
+│  │                 │                             │                     │    │
+│  │              ┌──▼─────────────────────────────▼──┐                  │    │
+│  │              │        llmClient.js               │                  │    │
+│  │              │   (unified multi-provider router)  │                 │    │
+│  └──────────────┴──────────────┬────────────────────┴─────────────────┘     │
 └─────────────────────────────────┼───────────────────────────────────────────┘
                                   │  HTTPS
           ┌───────────────────────┼───────────────────────┐
